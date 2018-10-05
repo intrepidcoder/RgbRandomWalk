@@ -1,21 +1,23 @@
-# RgbRandomWalk
-Creates fractal-like images with three 2D random walks in red, green, and blue.
+# Random Walk Wallpaper Generator
+Generate hazy fractal-like wallpaper images by simulating random walks in different colors.
 
-The intensity of a pixel is proportional (until it reaches the brightest value) to the number of times it is visited. See [Wikipedia](https://en.wikipedia.org/wiki/Random_walk) for more info on random walks.
-
-Made just for fun.
-
+The intensity of a pixel corresponds to the number of times it is visited during each random walk. See [Wikipedia](https://en.wikipedia.org/wiki/Random_walk) for more info on random walks.
 
 ## Usage
-`java RgbRandomWalk <imagefilepath> <width> <height> <steps>`
+```
+javac RgbRandomWalk.java
+java RgbRandomWalk <imagefilepath> <width> <height> <steps>
+```
 
-`imagefilepath` is the image file to write. Output in in PNG format regardless of specified extension. This can be changed in source file. **Note: will overwrite any existing file. Use caution.**
+The `<imagefilepath>` parameter is the filename of the PNG image to output. Output is in PNG format regardless of specified extension. This can be changed in source file. **Note: will overwrite any existing file. Use caution.**
 
-`width` and `height` are the size of image.
+`width` and `height` specify the size of image.
 
-`steps` is the number of steps to take for each random walk.
+`steps` specifies the number of steps to take for each random walk.
 
-## Examples
+The number of random walks and corresponding colors can be changed by editing the RgbRandomWalk.java file.
+
+## Example output
 
 ![Example 1](example1.png?raw=true)
 

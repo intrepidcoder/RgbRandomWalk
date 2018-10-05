@@ -17,12 +17,44 @@ public class RgbRandomWalk {
         }
     }
 
+    // Maps the number of steps into the range 0 to 255.
+    private static int colorMap(int stepCount) {
+        int[] multipliers = {8, 8, 4, 2};
+        int count = 16;
+        int value = 0;
+
+        for (int inc : multipliers) {
+            if (stepCount > count) {
+                value += count * inc;
+                stepCount -= count;
+            } else {
+                value += stepCount * inc;
+                stepCount = 0;
+            }
+        }
+
+        if (stepCount > 0) {
+            value += stepCount;
+        }
+        value = Math.min(value, 255);
+
+        return value;
+    }
+
     public static void main(String[] args) {
-        long start = System.currentTimeMillis();
         String fileName = "";
-        int width = 1920, height = 1080;
-        int increment = 8;
-        int steps = 6000000;
+        int width;
+        int height;
+        int steps;
+
+        // Colors for each of the random paths. Will generate a path for each
+        // color specified.
+        // Use RBG format like HTML, e.g. 0xRRGGBB where RR are two hex digits
+        // specifying the red value, GG specify green, and BB specify blue. Also
+        // can use builtin colors such as Color.BLUE, see documentation on
+        // java.awt.Color for details.
+        Color[] colors = {new Color(0x0000ff), new Color(0x00ff00), new Color(0xff0000)};
+
         String imgFormat = "png";
 
         if (args.length != 4) {
@@ -34,7 +66,6 @@ public class RgbRandomWalk {
                 width = Integer.parseInt(args[1], 10);
                 height = Integer.parseInt(args[2], 10);
                 steps = Integer.parseInt(args[3], 10);
-
             } catch (NumberFormatException e) {
                 System.out.println("Usage: java RgbRandomWalk <imagefilepath> <width> <height> <steps>");
                 System.out.println("Error: Invalid number.");
@@ -48,54 +79,52 @@ public class RgbRandomWalk {
             }
         }
 
-        BufferedImage img;
-        Color c;
-        // Good parameters are 1920 x 1080, intensity increment 8, and steps = 6000000.
+        int[] posX = new int[colors.length];
+        int[] posY = new int[colors.length];
+        int[][][] visitCount = new int[width][height][colors.length];
 
-        int rX = width / 2, rY = height / 2;
-        int gX = width / 2, gY = height / 2;
-        int bX = width / 2, bY = height / 2;
-        int r = 0, g = 0, b = 0;
-        // int sRGB, other;
-
-
-        img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
-        rX = width / 2;
-        rY = height / 2;
-        gX = width / 2;
-        gY = height / 2;
-        bX = width / 2;
-        bY = height / 2;
+        for (int i = 0; i < colors.length; i++) {
+            posX[i] = width / 2;
+            posY[i] = height / 2;
+        }
 
         for (int j = 0; j < steps; j++) {
-            rX = step(rX, width);
-            rY = step(rY, height);
-            gX = step(gX, width);
-            gY = step(gY, height);
-            bX = step(bX, width);
-            bY = step(bY, height);
+            for (int i = 0; i < colors.length; i++) {
+                posX[i] = step(posX[i], width);
+                posY[i] = step(posY[i], height);
 
-            c = new Color(img.getRGB(rX, rY));
-            img.setRGB(rX, rY, (c.getRGB() & 0xff00ffff) | (Math.min(c.getRed() + increment, 255) << 16));
-
-            c = new Color(img.getRGB(gX, gY));
-            img.setRGB(gX, gY, (c.getRGB() & 0xffff00ff) | (Math.min(c.getGreen() + increment, 255) << 8));
-
-            c = new Color(img.getRGB(bX, bY));
-            img.setRGB(bX, bY, (c.getRGB() & 0xffffff00) | (Math.min(c.getBlue() + increment, 255)));
+                visitCount[posX[i]][posY[i]][i]++;
+            }
         }
+        int[] pixels = new int[width * height];
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                int c = Color.BLACK.getRGB();
+                float[] rgb = new float[3];
+                float[] components = new float[3];
+                for (int k = 0; k < colors.length; k++) {
+                    float value = colorMap(visitCount[i][j][k]) / 256.0f;
+                    colors[k].getColorComponents(components);
+                    for (int m = 0; m < 3; m++) {
+                        rgb[m] += components[m] * value;
+                    }
+                }
+                for (int m = 0; m < 3; m++) {
+                    rgb[m] = Math.min(rgb[m], 1.0f);
+                }
+                pixels[i + width * j] = new Color(rgb[0], rgb[1], rgb[2]).getRGB();
+            }
+        }
+
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        img.setRGB(0, 0, width, height, pixels, 0, width);
 
         try {
             File outputfile = new File(fileName);
             ImageIO.write(img, imgFormat, outputfile);
-        } catch (Exception e) {
-            System.out.println("Error: cannot open the file.");
-            System.exit(0);
+        } catch (IOException e) {
+            System.err.println("Error: cannot open the file" + fileName);
         }
-
-
-        long time = System.currentTimeMillis()-start;
-        System.out.printf("Time used: %dm, %ds, %dms.%n", time / 60000, (time / 1000) % 60, time % 1000);
     }
 }
